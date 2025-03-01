@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html ng-app="kanbanApp">
+<head>
+    <title>AngularJS Kanban Task Manager</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.2/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-drag-and-drop-lists/2.1.0/angular-drag-and-drop-lists.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .kanban-board {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .kanban-column {
+            background-color: #ebecf0;
+            border-radius: 5px;
+            width: 300px;
+            min-height: 500px;
+            padding: 10px;
+            flex-shrink: 0;
+        }
+        
+        .column-header {
+            margin-bottom: 10px;
+            font-weight: bold;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .task-count {
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 12px;
+        }
+        
+        .task-card {
+            background-color: white;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+            cursor: grab;
+        }
+        
+        .task-card:hover {
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .task-title {
+            font-weight: bold;
+        }
+        
+        .task-description {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .dndDragging {
+            opacity: 0.7;
+        }
+        
+        .dndDraggingSource {
+            display: none;
+        }
+        
+        .dndPlaceholder {
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .new-task-form {
+            margin-bottom: 20px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        }
+        
+        input, textarea, select, button {
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        button {
+            background-color: #4a86e8;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        
+        button:hover {
+            background-color: #3a76d8;
+        }
+        
+        textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        
+        .priority-low {
+            border-left: 4px solid green;
+        }
+        
+        .priority-medium {
+            border-left: 4px solid orange;
+        }
+        
+        .priority-high {
+            border-left: 4px solid red;
+        }
+        
+        .task-meta {
+            font-size: 12px;
+            color: #888;
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body ng-controller="KanbanController">
+    <h1>Kanban Task Manager</h1>
+    
+    <div class="new-task-form">
+        <h3>Add New Task</h3>
+        <input type="text" ng-model="newTask.title" placeholder="Task Title" required>
+        <textarea ng-model="newTask.description" placeholder="Task Description"></textarea>
+        <select ng-model="newTask.priority">
+            <option value="low">Low Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="high">High Priority</option>
+        </select>
+        <button ng-click="addTask()">Add Task</button>
+    </div>
+    
+    <div class="kanban-board">
+        <div class="kanban-column" ng-repeat="column in columns">
+            <div class="column-header">
+                {{ column.name }}
+                <span class="task-count">{{ column.tasks.length }}</span>
+            </div>
+            
+            <div dnd-list="column.tasks">
+                <div ng-repeat="task in column.tasks"
+                     class="task-card priority-{{ task.priority }}"
+                     dnd-draggable="task"
+                     dnd-moved="onTaskMoved($index, column)"
+                     dnd-effect-allowed="move">
+                    <div class="task-title">{{ task.title }}</div>
+                    <div class="task-description">{{ task.description }}</div>
+                    <div class="task-meta">
+                        <span>Priority: {{ task.priority }}</span>
+                        <span>{{ task.date | date:'MMM d' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var kanbanApp = angular.module('kanbanApp', ['dndLists']);
+        
+        kanbanApp.controller('KanbanController', function($scope) {
+            // Initialize the columns
+            $scope.columns = [
+                {
+                    name: 'To Do',
+                    tasks: [
+                        {
+                            title: 'Design new landing page',
+                            description: 'Create design mockups for the new marketing campaign landing page',
+                            priority: 'medium',
+                            date: new Date()
+                        },
+                        {
+                            title: 'Fix login bug',
+                            description: 'Users report intermittent login failures on mobile devices',
+                            priority: 'high',
+                            date: new Date()
+                        }
+                    ]
+                },
+                {
+                    name: 'In Progress',
+                    tasks: [
+                        {
+                            title: 'Update user documentation',
+                            description: 'Add sections for the new features released in v2.0',
+                            priority: 'low',
+                            date: new Date()
+                        }
+                    ]
+                },
+                {
+                    name: 'Testing',
+                    tasks: [
+                        {
+                            title: 'Test payment integration',
+                            description: 'Verify the new PayPal integration works for all subscription tiers',
+                            priority: 'medium',
+                            date: new Date()
+                        }
+                    ]
+                },
+                {
+                    name: 'Done',
+                    tasks: [
+                        {
+                            title: 'Setup CI/CD pipeline',
+                            description: 'Configure automated testing and deployment for the backend service',
+                            priority: 'high',
+                            date: new Date(Date.now() - 86400000)
+                        }
+                    ]
+                }
+            ];
+            
+            // Initialize a new task object
+            $scope.newTask = {
+                title: '',
+                description: '',
+                priority: 'medium',
+                date: new Date()
+            };
+            
+            // Function to add a new task
+            $scope.addTask = function() {
+                if (!$scope.newTask.title) return;
+                
+                // Add to the first column (To Do)
+                $scope.columns[0].tasks.push({
+                    title: $scope.newTask.title,
+                    description: $scope.newTask.description,
+                    priority: $scope.newTask.priority,
+                    date: new Date()
+                });
+                
+                // Reset the form
+                $scope.newTask = {
+                    title: '',
+                    description: '',
+                    priority: 'medium'
+                };
+            };
+            
+            // Function called when a task is moved between columns
+            $scope.onTaskMoved = function(index, column) {
+                column.tasks.splice(index, 1);
+            };
+        });
+    </script>
+</body>
+</html>
